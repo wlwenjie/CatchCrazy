@@ -1,7 +1,7 @@
 package com.wlwenjiejoy.catchcrazycat;
 
+import java.util.HashMap;
 import java.util.Vector;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -16,12 +16,13 @@ import android.view.View.OnTouchListener;
 import android.widget.Toast;
 
 public class Playground extends SurfaceView implements OnTouchListener {
-//	int k = 1;
 
 	private static int WIDTH = 80;
 	private static final int ROW = 10;
 	private static final int COL = 10;
 	private static final int BLOCKS = 15;
+	boolean justInit;
+
 	private Dot matrix[][];
 	private Dot cat;
 
@@ -86,13 +87,17 @@ public class Playground extends SurfaceView implements OnTouchListener {
 		}
 		return null;
 	}
+
 	private int getDistance(Dot dot, int direction) {
 		int distance = 0;
+		if (isAtEdge(dot)) {
+			return 1;
+		}
 		Dot current = dot, next;
 		while (true) {
 			next = getNeighbouer(current, direction);
 			if (next.getStatus() == dot.STATUS_ON) {
-				return distance*-1;
+				return distance * -1;
 			}
 			if (isAtEdge(next)) {
 				distance++;
@@ -102,34 +107,72 @@ public class Playground extends SurfaceView implements OnTouchListener {
 			current = next;
 		}
 	}
+
 	private void MoveTo(Dot catTo) {
 		catTo.setStatus(Dot.STATUS_IN);
 		getDot(cat.getX(), cat.getY()).setStatus(Dot.STATUS_OFF);
 		cat.setXY(catTo.getX(), catTo.getY());
 	}
+
 	private void move() {
 		if (isAtEdge(cat)) {
 			lose();
 			return;
 		}
 		Vector<Dot> avaliabel = new Vector<Dot>();
+		Vector<Dot> positive = new Vector<Dot>();
+		HashMap<Dot, Integer> al = new HashMap<Dot, Integer>();
 		for (int i = 1; i < 7; i++) {
 			Dot nDot = getNeighbouer(cat, i);
 			if (nDot.getStatus() == Dot.STATUS_OFF) {
 				avaliabel.add(nDot);
+				al.put(nDot, i);
+				if (getDistance(nDot, i) > 0) {
+					positive.add(nDot);
+				}
 			}
 		}
 		if (avaliabel.size() == 0) {
 			win();
-		} else {
+		} else if (avaliabel.size() == 1) {
 			MoveTo(avaliabel.get(0));
+		} else if (justInit) {
+			MoveTo(avaliabel.get((int) ((Math.random() * 1000) % avaliabel
+					.size())));
+		} else {
+			Dot bestDot = null;
+			if (positive.size() != 0) {
+				int min = 999;
+				for (Dot dot : positive) {
+					int a = getDistance(dot, al.get(dot));
+					if (a < min) {
+						min = a;
+						bestDot = dot;
+					}
+				}
+
+			} else {
+				int max = 0;
+				for (Dot dot : avaliabel) {
+					int b = getDistance(dot, al.get(dot));
+					if (b < max) {
+						max = b;
+						bestDot = dot;
+					}
+				}
+			}
+			MoveTo(bestDot);
 		}
 	}
+
 	private void lose() {
-		Toast.makeText(getContext(), "LOSE!", Toast.LENGTH_SHORT).show();;
+		Toast.makeText(getContext(), "LOSE!", Toast.LENGTH_SHORT).show();
+		;
 	}
+
 	private void win() {
-		Toast.makeText(getContext(), "YOU WIN!", Toast.LENGTH_SHORT).show();;		
+		Toast.makeText(getContext(), "YOU WIN!", Toast.LENGTH_SHORT).show();
+		;
 	}
 
 	private void redraw() {
@@ -203,6 +246,7 @@ public class Playground extends SurfaceView implements OnTouchListener {
 				i++;
 			}
 		}
+		justInit = true;
 	}
 
 	@Override
@@ -217,10 +261,10 @@ public class Playground extends SurfaceView implements OnTouchListener {
 			}
 			if (x + 1 > COL || y + 1 > ROW) {
 				initGame();
-//				getNeighbouer(cat, k).setStatus(Dot.STATUS_IN);
-//				k++;
-//				redraw();
-			} else if(getDot(x, y).getStatus() == Dot.STATUS_OFF) {
+				// getNeighbouer(cat, k).setStatus(Dot.STATUS_IN);
+				// k++;
+				// redraw();
+			} else if (getDot(x, y).getStatus() == Dot.STATUS_OFF) {
 				getDot(x, y).setStatus(Dot.STATUS_ON);
 				move();
 			}
